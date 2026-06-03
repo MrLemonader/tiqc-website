@@ -53,7 +53,7 @@ The MVP includes:
 - Local avatar file storage
 - MySQL database
 - Flask backend
-- HTML/CSS/JavaScript frontend
+- Vue 3 + Vite + Naive UI frontend
 - Linux deployment support
 - Nginx reverse proxy for internal access
 
@@ -350,7 +350,7 @@ webp
 Maximum file size:
 
 ```text
-2 MB
+20 MB
 ```
 
 ### Storage
@@ -748,14 +748,12 @@ The system should use a clear Flask project structure.
 
 Business logic should be separated from route handlers when practical.
 
-Suggested layers:
+Suggested backend layers:
 
 ```text
 routes/
 services/
 models/
-templates/
-static/
 ```
 
 ### 7.4 Security
@@ -781,26 +779,29 @@ Docker Compose can be used, but the stack should remain simple.
 ### Frontend
 
 ```text
-HTML
-CSS
+Vue 3
+Vite
+Naive UI
 JavaScript
 ```
 
 Implementation approach:
 
 ```text
-Flask Jinja templates + static CSS + static JavaScript
+Vue SPA + Flask JSON API
 ```
 
 Recommended structure:
 
 ```text
-templates/
-static/css/
-static/js/
+frontend/
+frontend/src/
+frontend/src/views/
+frontend/src/components/
+frontend/src/services/
 ```
 
-No React, Next.js, Vue, or other frontend framework is required for the MVP.
+Flask should not render Jinja pages for the MVP frontend. Page routes are handled by Vue Router; Flask provides API, upload access, and development login endpoints.
 
 ---
 
@@ -892,20 +893,17 @@ TIQC-website/
 │   │   ├── permission_service.py
 │   │   └── upload_service.py
 │   │
-│   ├── templates/
-│   │   ├── base.html
-│   │   ├── index.html
-│   │   ├── members.html
-│   │   ├── member_detail.html
-│   │   └── profile.html
-│   │
 │   └── static/
-│       ├── css/
-│       │   └── style.css
-│       ├── js/
-│       │   └── profile.js
 │       └── images/
-│           └── default-avatar.png
+│           └── default-avatar.svg
+│
+├── frontend/
+│   ├── package.json
+│   ├── vite.config.js
+│   └── src/
+│       ├── components/
+│       ├── services/
+│       └── views/
 │
 ├── migrations/
 ├── uploads/
@@ -940,7 +938,7 @@ The MVP is complete when:
 [ ] A member cannot edit another member's profile.
 [ ] A member cannot update forbidden fields.
 [ ] Avatar uploads are restricted to jpg/jpeg/png/webp.
-[ ] Avatar upload size is limited to 2 MB.
+[ ] Avatar upload size is limited to 20 MB.
 [ ] The project can run locally.
 [ ] The project can run on a Linux server with MySQL.
 ```
