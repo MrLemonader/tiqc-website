@@ -25,4 +25,7 @@ class Config:
     MAX_CONTENT_LENGTH = 20 * 1024 * 1024
     UPLOAD_FOLDER = resolve_project_path(os.getenv("UPLOAD_FOLDER"), "uploads")
     AVATAR_UPLOAD_FOLDER = str(Path(UPLOAD_FOLDER) / "avatars")
+    FRONTEND_DIST_FOLDER = resolve_project_path(
+        os.getenv("FRONTEND_DIST_FOLDER"), "frontend/dist"
+    )
     DEFAULT_CAMPUS_ID = os.getenv("DEFAULT_CAMPUS_ID", "")

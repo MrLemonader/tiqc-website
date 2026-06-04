@@ -27,6 +27,20 @@ export function getCurrentUser() {
   return request('/api/me')
 }
 
+export function login(campusId) {
+  return request('/api/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ campus_id: campusId }),
+  })
+}
+
+export function logout() {
+  return request('/api/logout', {
+    method: 'POST',
+  })
+}
+
 export function getMembers() {
   return request('/api/members')
 }

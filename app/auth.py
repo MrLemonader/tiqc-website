@@ -1,4 +1,4 @@
-from flask import Blueprint, current_app, g, make_response, redirect, request
+from flask import Blueprint, g, make_response, redirect, request
 
 from .models import User
 
@@ -6,7 +6,7 @@ auth_bp = Blueprint("auth", __name__)
 
 
 def get_current_user():
-    campus_id = request.cookies.get("campus_id") or current_app.config["DEFAULT_CAMPUS_ID"]
+    campus_id = request.cookies.get("campus_id")
     if not campus_id:
         return None
     return User.query.filter_by(campus_id=campus_id).first()

@@ -142,10 +142,6 @@ async function saveProfile() {
   }
 }
 
-function devLogin(campusId) {
-  window.location.href = `/dev-login/${campusId}`
-}
-
 function triggerAvatarPicker() {
   avatarInput.value?.click()
 }
@@ -182,14 +178,11 @@ onMounted(loadProfile)
   <template v-else>
     <section v-if="loginRequired" class="notice-panel">
       <h1>Login required</h1>
-      <p>Use a development login before editing your profile.</p>
+      <p>Login with your campus ID before editing your profile.</p>
       <div class="button-row">
-        <n-button type="primary" @click="devLogin('20240001')">
-          Login as demo member
-        </n-button>
-        <n-button @click="devLogin('20240002')">
-          Login as second member
-        </n-button>
+        <RouterLink class="primary-link" to="/login?redirect=/profile">
+          Login
+        </RouterLink>
       </div>
     </section>
 

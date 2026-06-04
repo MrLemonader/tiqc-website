@@ -1,13 +1,15 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { RouterLink, RouterView, useRoute } from 'vue-router'
+import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 import { PersonCircleOutline } from '@vicons/ionicons5'
 
-import { getCurrentUser } from '@/services/api'
+import { getCurrentUser, logout } from '@/services/api'
 
 const route = useRoute()
+const router = useRouter()
 const user = ref(null)
 const loadingUser = ref(true)
+const loggingOut = ref(false)
 
 const navItems = [
   { label: 'Home', to: '/' },
@@ -29,6 +31,21 @@ async function loadUser() {
   }
 }
 
+function setUser(nextUser) {
+  user.value = nextUser
+}
+
+async function logoutUser() {
+  loggingOut.value = true
+  try {
+    await logout()
+    user.value = null
+    router.push('/')
+  } finally {
+    loggingOut.value = false
+  }
+}
+
 onMounted(loadUser)
 </script>
 
@@ -37,7 +54,7 @@ onMounted(loadUser)
     <n-message-provider>
       <div class="app-shell">
         <header class="site-header">
-          <RouterLink class="brand" to="/">TIQC Profiles</RouterLink>
+          <RouterLink class="brand" to="/">TIQC Lab</RouterLink>
           <nav class="nav-links" aria-label="Primary">
             <RouterLink
               v-for="item in navItems"
@@ -48,17 +65,40 @@ onMounted(loadUser)
               {{ item.label }}
             </RouterLink>
           </nav>
-          <div class="user-pill">
-            <n-icon size="18">
-              <PersonCircleOutline />
-            </n-icon>
-            <span>{{ loadingUser ? 'Checking...' : userLabel }}</span>
+          <div class="header-actions">
+            <RouterLink
+              v-if="!loadingUser && !user"
+              class="login-link"
+              :class="{ active: route.path === '/login' }"
+              to="/login"
+            >
+              Login
+            </RouterLink>
+            <div class="user-pill">
+              <n-icon size="18">
+                <PersonCircleOutline />
+              </n-icon>
+              <span>{{ loadingUser ? 'Checking...' : userLabel }}</span>
+            </div>
+            <n-button
+              v-if="user"
+              size="small"
+              quaternary
+              :loading="loggingOut"
+              @click="logoutUser"
+            >
+              Logout
+            </n-button>
           </div>
         </header>
 
         <main class="page-wrap">
           <RouterView v-slot="{ Component }">
-            <component :is="Component" @profile-updated="loadUser" />
+            <component
+              :is="Component"
+              @login-success="setUser"
+              @profile-updated="loadUser"
+            />
           </RouterView>
         </main>
       </div>

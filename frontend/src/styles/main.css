@@ -92,6 +92,23 @@ a:hover {
   font-size: 14px;
 }
 
+.header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.login-link {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.login-link.active,
+.login-link.router-link-active {
+  color: var(--accent);
+}
+
 .page-wrap {
   width: min(var(--page-max), calc(100% - 64px));
   margin: 0 auto;
@@ -353,6 +370,14 @@ p {
 
 .notice-panel {
   max-width: 560px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 26px;
+}
+
+.auth-panel {
+  max-width: 520px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface);
