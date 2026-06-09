@@ -1,4 +1,4 @@
-from flask import Blueprint, g, make_response, redirect, request
+from flask import Blueprint, g, make_response, redirect, request, abort, current_app
 
 from .models import User
 
@@ -25,6 +25,12 @@ def load_current_user():
 
 @auth_bp.route("/dev-login/<campus_id>")
 def dev_login(campus_id):
+    if not (
+        current_app.config.get("ENABLE_DEV_LOGIN")
+        or current_app.debug
+        or current_app.testing
+    ):
+        abort(404)
     response = make_response(redirect("/profile"))
     response.set_cookie("campus_id", campus_id, httponly=True, samesite="Lax")
     return response
@@ -32,6 +38,12 @@ def dev_login(campus_id):
 
 @auth_bp.route("/dev-logout")
 def dev_logout():
+    if not (
+        current_app.config.get("ENABLE_DEV_LOGIN")
+        or current_app.debug
+        or current_app.testing
+    ):
+        abort(404)
     response = make_response(redirect("/"))
     response.delete_cookie("campus_id")
     return response

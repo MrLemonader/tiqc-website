@@ -9,15 +9,17 @@ class AdminServiceError(ValueError):
     pass
 
 
-def create_user(campus_id, name, email=None, role="member"):
+def create_user(campus_id, name, email=None, role="member", password=None):
     campus_id = normalize_required(campus_id, "campus_id")
     name = normalize_required(name, "name")
     role = normalize_choice(role or "member", USER_ROLES, "role")
+    password = normalize_required(password if password is not None else campus_id, "password")
 
     if User.query.filter_by(campus_id=campus_id).first():
         raise AdminServiceError(f"User campus_id already exists: {campus_id}")
 
     user = User(campus_id=campus_id, name=name, email=normalize_optional(email), role=role)
+    user.set_password(password)
     db.session.add(user)
     db.session.commit()
     return user

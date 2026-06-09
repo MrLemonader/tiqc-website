@@ -4,7 +4,7 @@ from tempfile import TemporaryDirectory
 
 from app import create_app
 from app.extensions import db
-from app.models import Member
+from app.models import Member, User
 from app.services.admin_service import (
     AdminServiceError,
     create_member,
@@ -48,15 +48,19 @@ class AdminServiceTests(unittest.TestCase):
         )
 
         self.assertEqual(user.role, "member")
+        self.assertNotEqual(user.password_hash, "20249901")
+        self.assertTrue(user.check_password("20249901"))
         self.assertEqual(member.user_id, user.id)
         self.assertEqual(member.name, "Test Member")
         self.assertEqual(member.email, "test@example.edu")
         self.assertTrue(member.active)
 
     def test_create_admin_user(self):
-        user = create_user("admin-test", "Admin User", role="admin")
+        user = create_user("admin-test", "Admin User", role="admin", password="custom-secret")
 
         self.assertEqual(user.role, "admin")
+        self.assertTrue(user.check_password("custom-secret"))
+        self.assertFalse(user.check_password("admin-test"))
 
     def test_rejects_duplicate_user_campus_id(self):
         create_user("20249901", "Test Member")
@@ -136,10 +140,13 @@ class AdminCliTests(unittest.TestCase):
                 "CLI Member",
                 "--email",
                 "cli@example.edu",
+                "--password",
+                "cli-secret",
             ]
         )
         self.assertEqual(result.exit_code, 0, result.output)
         self.assertIn("campus_id=20249903", result.output)
+        self.assertTrue(User.query.filter_by(campus_id="20249903").first().check_password("cli-secret"))
 
         result = self.runner.invoke(
             args=[
@@ -194,6 +201,22 @@ class AdminCliTests(unittest.TestCase):
 
         self.assertNotEqual(result.exit_code, 0)
         self.assertIn("already exists", result.output)
+
+    def test_upgrade_passwords_backfills_missing_hashes(self):
+        user = create_user("20249903", "Legacy User")
+        user.password_hash = None
+        db.session.commit()
+
+        result = self.runner.invoke(args=["upgrade-passwords"])
+        self.assertEqual(result.exit_code, 0, result.output)
+        self.assertIn("Password hashes backfilled: 1", result.output)
+
+        user = User.query.filter_by(campus_id="20249903").first()
+        self.assertTrue(user.check_password("20249903"))
+
+        result = self.runner.invoke(args=["upgrade-passwords"])
+        self.assertEqual(result.exit_code, 0, result.output)
+        self.assertIn("Password hashes backfilled: 0", result.output)
 
 
 if __name__ == "__main__":

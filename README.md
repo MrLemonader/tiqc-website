@@ -30,6 +30,12 @@ flask --app app.py init-db
 flask --app app.py seed-db
 ```
 
+If you are upgrading an existing database created before password login, run:
+
+```bash
+flask --app app.py upgrade-passwords
+```
+
 6. Run the Flask API:
 
 ```bash
@@ -78,14 +84,14 @@ An alternative deployment is to let Nginx serve `frontend/dist` directly and pro
 
 Visitors can browse the homepage, member list, and member detail pages without logging in. Editing `/profile` requires a member login.
 
-Use `/login` and enter a seeded campus ID, such as:
+Use `/login` and enter a seeded campus ID and password. The seeded demo users use their campus ID as the initial password:
 
 - `20240001`
 - `20240002`
 
-The login form calls `/api/login`, sets a secure HTTP-only `campus_id` cookie, and redirects to `/profile`. Use the header logout button or `/api/logout` to clear the login cookie.
+The login form calls `/api/login`, sets a secure HTTP-only `campus_id` cookie, and redirects to `/profile`. Logged-in users can change their password from `/profile`. Use the header logout button or `/api/logout` to clear the login cookie.
 
-Development shortcuts are still available after seeding demo data:
+Development shortcuts are still available after seeding demo data when `ENABLE_DEV_LOGIN=true` or Flask is running in debug/testing mode:
 
 - `/dev-login/20240001`
 - `/dev-login/20240002`
@@ -100,6 +106,12 @@ Create a user:
 
 ```bash
 flask --app app.py create-user --campus-id 20240003 --name "Carol Wang" --email carol@example.edu --role member
+```
+
+If `--password` is omitted, the initial password defaults to the user's campus ID:
+
+```bash
+flask --app app.py create-user --campus-id 20240004 --name "David Zhang" --password "temporary-password"
 ```
 
 Create a member profile and bind it to that user:
@@ -129,6 +141,7 @@ Supported user roles are `member` and `admin`. Supported member roles are `pi`, 
 - `/api/login`
 - `/api/logout`
 - `/api/me`
+- `/api/password`
 - `/api/members`
 - `/api/members/<slug>`
 - `/api/profile`

@@ -27,11 +27,11 @@ export function getCurrentUser() {
   return request('/api/me')
 }
 
-export function login(campusId) {
+export function login(campusId, password) {
   return request('/api/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ campus_id: campusId }),
+    body: JSON.stringify({ campus_id: campusId, password }),
   })
 }
 
@@ -56,6 +56,14 @@ export function getProfile() {
 export function updateProfile(payload) {
   return request('/api/profile', {
     method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+}
+
+export function changePassword(payload) {
+  return request('/api/password', {
+    method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   })

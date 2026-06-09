@@ -1,7 +1,14 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 
-import { avatarUrl, getCurrentUser, getProfile, updateProfile, uploadAvatar } from '@/services/api'
+import {
+  avatarUrl,
+  changePassword,
+  getCurrentUser,
+  getProfile,
+  updateProfile,
+  uploadAvatar,
+} from '@/services/api'
 
 const emit = defineEmits(['profile-updated'])
 
@@ -10,11 +17,14 @@ const member = ref(null)
 const loading = ref(true)
 const saving = ref(false)
 const uploading = ref(false)
+const passwordSaving = ref(false)
 const loginRequired = ref(false)
 const avatarInput = ref(null)
 const avatarVersion = ref(Date.now())
 const statusMessage = ref('')
 const statusType = ref('info')
+const passwordStatusMessage = ref('')
+const passwordStatusType = ref('info')
 const currentYear = new Date().getFullYear()
 const profileForm = ref(null)
 const formRules = {
@@ -30,6 +40,11 @@ const form = ref({
   bio: '',
   publication_links: [],
 })
+const passwordForm = ref({
+  current_password: '',
+  new_password: '',
+  confirm_password: '',
+})
 
 const previewAvatar = computed(() => {
   if (!member.value?.avatar_url) {
@@ -41,6 +56,11 @@ const previewAvatar = computed(() => {
 function setStatus(text, type = 'info') {
   statusMessage.value = text
   statusType.value = type
+}
+
+function setPasswordStatus(text, type = 'info') {
+  passwordStatusMessage.value = text
+  passwordStatusType.value = type
 }
 
 function syncForm(nextMember) {
@@ -67,6 +87,7 @@ async function loadProfile() {
     member.value = profileData.member
     avatarVersion.value = Date.now()
     syncForm(profileData.member)
+    setPasswordStatus('')
   } catch (error) {
     if (error.status === 401) {
       loginRequired.value = true
@@ -75,6 +96,54 @@ async function loadProfile() {
     }
   } finally {
     loading.value = false
+  }
+}
+
+function resetPasswordForm() {
+  passwordForm.value = {
+    current_password: '',
+    new_password: '',
+    confirm_password: '',
+  }
+}
+
+function passwordErrorMessage(error) {
+  const messages = {
+    current_password_required: 'Current password is required.',
+    new_password_required: 'New password is required.',
+    new_password_too_short: 'New password must be at least 8 characters.',
+    invalid_current_password: 'Current password is incorrect.',
+  }
+  return messages[error.data?.error] || error.message
+}
+
+async function submitPasswordChange() {
+  setPasswordStatus('')
+  if (!passwordForm.value.current_password) {
+    setPasswordStatus('Current password is required.', 'error')
+    return
+  }
+  if (passwordForm.value.new_password.length < 8) {
+    setPasswordStatus('New password must be at least 8 characters.', 'error')
+    return
+  }
+  if (passwordForm.value.new_password !== passwordForm.value.confirm_password) {
+    setPasswordStatus('New passwords do not match.', 'error')
+    return
+  }
+
+  passwordSaving.value = true
+  try {
+    await changePassword({
+      current_password: passwordForm.value.current_password,
+      new_password: passwordForm.value.new_password,
+    })
+    resetPasswordForm()
+    setPasswordStatus('Password updated.', 'success')
+  } catch (error) {
+    setPasswordStatus(passwordErrorMessage(error), 'error')
+  } finally {
+    passwordSaving.value = false
   }
 }
 
@@ -225,6 +294,49 @@ onMounted(loadProfile)
           </n-button>
           <p v-if="uploading" class="muted">Uploading avatar...</p>
         </div>
+      </n-card>
+
+      <n-card title="Change password">
+        <n-alert
+          v-if="passwordStatusMessage"
+          class="profile-alert"
+          :type="passwordStatusType"
+          role="status"
+        >
+          {{ passwordStatusMessage }}
+        </n-alert>
+        <n-form label-placement="top" @submit.prevent="submitPasswordChange">
+          <n-form-item label="Current password">
+            <n-input
+              v-model:value="passwordForm.current_password"
+              type="password"
+              show-password-on="click"
+              @keyup.enter="submitPasswordChange"
+            />
+          </n-form-item>
+          <n-form-item label="New password">
+            <n-input
+              v-model:value="passwordForm.new_password"
+              type="password"
+              show-password-on="click"
+              placeholder="At least 8 characters"
+              @keyup.enter="submitPasswordChange"
+            />
+          </n-form-item>
+          <n-form-item label="Confirm new password">
+            <n-input
+              v-model:value="passwordForm.confirm_password"
+              type="password"
+              show-password-on="click"
+              @keyup.enter="submitPasswordChange"
+            />
+          </n-form-item>
+          <div class="save-row">
+            <n-button type="primary" :loading="passwordSaving" @click="submitPasswordChange">
+              {{ passwordSaving ? 'Updating...' : 'Update password' }}
+            </n-button>
+          </div>
+        </n-form>
       </n-card>
 
       <n-card class="full-span" title="Profile details">

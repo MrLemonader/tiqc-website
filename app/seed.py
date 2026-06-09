@@ -14,6 +14,9 @@ def seed_demo_data():
         email="admin@example.edu",
         role="admin",
     )
+    alice.set_password(alice.campus_id)
+    bob.set_password(bob.campus_id)
+    admin.set_password(admin.campus_id)
     db.session.add_all([alice, bob, admin])
     db.session.flush()
 

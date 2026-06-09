@@ -56,15 +56,29 @@ class AuthApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.get_json()["error"], "campus_id_required")
 
-        response = self.client.post("/api/login", json={"campus_id": "missing"})
+        response = self.client.post("/api/login", json={"campus_id": "20249901"})
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.get_json()["error"], "password_required")
+
+        response = self.client.post(
+            "/api/login", json={"campus_id": "missing", "password": "missing"}
+        )
         self.assertEqual(response.status_code, 401)
-        self.assertEqual(response.get_json()["error"], "invalid_campus_id")
+        self.assertEqual(response.get_json()["error"], "invalid_credentials")
+
+        response = self.client.post(
+            "/api/login", json={"campus_id": "20249901", "password": "wrong-password"}
+        )
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.get_json()["error"], "invalid_credentials")
 
         response = self.client.get("/api/me")
         self.assertEqual(response.status_code, 401)
 
     def test_login_allows_member_to_read_and_update_own_profile(self):
-        response = self.client.post("/api/login", json={"campus_id": "20249901"})
+        response = self.client.post(
+            "/api/login", json={"campus_id": "20249901", "password": "20249901"}
+        )
         self.assertEqual(response.status_code, 200)
         self.assertIn("campus_id=20249901", response.headers.get("Set-Cookie", ""))
 
@@ -91,7 +105,9 @@ class AuthApiTests(unittest.TestCase):
         self.assertEqual(member["name"], "Alice Member")
 
     def test_logout_clears_login_cookie(self):
-        self.client.post("/api/login", json={"campus_id": "20249901"})
+        self.client.post(
+            "/api/login", json={"campus_id": "20249901", "password": "20249901"}
+        )
 
         response = self.client.post("/api/logout")
         self.assertEqual(response.status_code, 200)
@@ -101,12 +117,63 @@ class AuthApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 401)
 
     def test_logged_in_user_without_member_gets_profile_error(self):
-        response = self.client.post("/api/login", json={"campus_id": "admin-test"})
+        response = self.client.post(
+            "/api/login", json={"campus_id": "admin-test", "password": "admin-test"}
+        )
         self.assertEqual(response.status_code, 200)
 
         response = self.client.get("/api/profile")
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.get_json()["error"], "member_profile_not_found")
+
+    def test_change_password_requires_login_and_valid_current_password(self):
+        response = self.client.post(
+            "/api/password",
+            json={"current_password": "20249901", "new_password": "new-password"},
+        )
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.get_json()["error"], "login_required")
+
+        self.client.post(
+            "/api/login", json={"campus_id": "20249901", "password": "20249901"}
+        )
+
+        response = self.client.post(
+            "/api/password",
+            json={"current_password": "wrong-password", "new_password": "new-password"},
+        )
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.get_json()["error"], "invalid_current_password")
+
+        response = self.client.post(
+            "/api/password",
+            json={"current_password": "20249901", "new_password": "short"},
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.get_json()["error"], "new_password_too_short")
+
+    def test_change_password_replaces_login_password(self):
+        response = self.client.post(
+            "/api/login", json={"campus_id": "20249901", "password": "20249901"}
+        )
+        self.assertEqual(response.status_code, 200)
+
+        response = self.client.post(
+            "/api/password",
+            json={"current_password": "20249901", "new_password": "updated-password"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.client.post("/api/logout")
+
+        response = self.client.post(
+            "/api/login", json={"campus_id": "20249901", "password": "20249901"}
+        )
+        self.assertEqual(response.status_code, 401)
+
+        response = self.client.post(
+            "/api/login", json={"campus_id": "20249901", "password": "updated-password"}
+        )
+        self.assertEqual(response.status_code, 200)
 
 
 if __name__ == "__main__":

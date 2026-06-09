@@ -29,3 +29,4 @@ class Config:
         os.getenv("FRONTEND_DIST_FOLDER"), "frontend/dist"
     )
     DEFAULT_CAMPUS_ID = os.getenv("DEFAULT_CAMPUS_ID", "")
+    ENABLE_DEV_LOGIN = os.getenv("ENABLE_DEV_LOGIN", "").lower() in {"1", "true", "yes"}

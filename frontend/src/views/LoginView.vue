@@ -9,6 +9,7 @@ const emit = defineEmits(['login-success'])
 const route = useRoute()
 const router = useRouter()
 const campusId = ref('')
+const password = ref('')
 const loading = ref(false)
 const checking = ref(true)
 const error = ref('')
@@ -25,15 +26,19 @@ async function submitLogin() {
     error.value = 'Campus ID is required.'
     return
   }
+  if (!password.value) {
+    error.value = 'Password is required.'
+    return
+  }
 
   loading.value = true
   try {
-    const data = await login(trimmedCampusId)
+    const data = await login(trimmedCampusId, password.value)
     emit('login-success', data.user)
     router.push(redirectTarget())
   } catch (err) {
-    error.value = err.data?.error === 'invalid_campus_id'
-      ? 'No account was found for that campus ID.'
+    error.value = err.data?.error === 'invalid_credentials'
+      ? 'Campus ID or password is incorrect.'
       : err.message
   } finally {
     loading.value = false
@@ -73,6 +78,16 @@ onMounted(async () => {
             v-model:value="campusId"
             autofocus
             placeholder="20240001"
+            @keyup.enter="submitLogin"
+          />
+        </n-form-item>
+
+        <n-form-item label="Password">
+          <n-input
+            v-model:value="password"
+            type="password"
+            show-password-on="click"
+            placeholder="Initial password is your campus ID"
             @keyup.enter="submitLogin"
           />
         </n-form-item>

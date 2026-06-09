@@ -2,6 +2,7 @@ from pathlib import Path
 
 import click
 from flask import Flask, jsonify
+from sqlalchemy import inspect, text
 from werkzeug.exceptions import RequestEntityTooLarge
 
 from config import Config
@@ -48,20 +49,50 @@ def register_cli(app):
     @click.option("--name", required=True, help="User display name.")
     @click.option("--email", default=None, help="Optional contact email.")
     @click.option(
+        "--password",
+        default=None,
+        help="Initial password. Defaults to the campus ID when omitted.",
+    )
+    @click.option(
         "--role",
         default="member",
         show_default=True,
         type=click.Choice(["admin", "member"]),
         help="System role.",
     )
-    def create_user_command(campus_id, name, email, role):
+    def create_user_command(campus_id, name, email, password, role):
         from .services.admin_service import AdminServiceError, create_user
 
         try:
-            user = create_user(campus_id=campus_id, name=name, email=email, role=role)
+            user = create_user(
+                campus_id=campus_id,
+                name=name,
+                email=email,
+                role=role,
+                password=password,
+            )
         except AdminServiceError as exc:
             raise click.ClickException(str(exc)) from exc
         click.echo(format_user(user))
+
+    @app.cli.command("upgrade-passwords")
+    def upgrade_passwords_command():
+        from .models import User
+
+        inspector = inspect(db.engine)
+        user_columns = {column["name"] for column in inspector.get_columns("users")}
+        if "password_hash" not in user_columns:
+            db.session.execute(text("ALTER TABLE users ADD COLUMN password_hash VARCHAR(255)"))
+            db.session.commit()
+            click.echo("Added users.password_hash column.")
+
+        updated = 0
+        for user in User.query.order_by(User.id.asc()).all():
+            if not user.password_hash:
+                user.set_password(user.campus_id)
+                updated += 1
+        db.session.commit()
+        click.echo(f"Password hashes backfilled: {updated}.")
 
     @app.cli.command("create-member")
     @click.option(
